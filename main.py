@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -36,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-o", "--output",
         default=None,
-        help="出力先ファイルパス (省略時は stdout)",
+        help="出力先ファイルパス (output フォルダに格納。省略時は stdout)",
     )
     parser.add_argument(
         "--local",
@@ -88,9 +89,11 @@ def main() -> None:
     json_str = result.to_json(indent=args.indent)
 
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
+        out_path = os.path.join("output", args.output)
+        os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
             f.write(json_str)
-        print(f"[INFO] 出力完了: {args.output}", file=sys.stderr)
+        print(f"[INFO] 出力完了: {out_path}", file=sys.stderr)
     else:
         print(json_str)
 
