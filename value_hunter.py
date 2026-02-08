@@ -12,9 +12,10 @@ Value Hunter — 競馬バリュー分析ツール
   - JSON:       output/value_hunter_result.json
 
 使い方:
-  python value_hunter.py
-  python value_hunter.py -i output/result.json
-  python value_hunter.py -i output/result.json -o output/vh_result.json
+  python value_hunter.py                           # デフォルト入力 output/result.json
+  python value_hunter.py output/result.json         # 位置引数で入力ファイル指定
+  python value_hunter.py -i output/result.json    # -i で入力指定
+  python value_hunter.py output/result.json -o output/vh_result.json
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ DEFAULT_OUTPUT = "output/value_hunter_result.json"
 
 # 着順 → ポイント (1着=100 … 10着以下は段階的に低下)
 POSITION_POINTS: dict[int, float] = {
-    1: 100, 2: 85, 3: 75, 4: 65, 5: 55,
+    1: 100, 2: 90, 3: 80, 4: 65, 5: 55,
     6: 45,  7: 35, 8: 25, 9: 15, 10: 10,
 }
 
@@ -46,10 +47,10 @@ RECENCY_WEIGHTS: dict[int, float] = {
 }
 
 # スコア配分
-WEIGHT_FORM   = 0.40   # 着順フォーム
-WEIGHT_LAST3F = 0.25   # 上がり3F
+WEIGHT_FORM   = 0.30   # 着順フォーム
+WEIGHT_LAST3F = 0.30   # 上がり3F
 WEIGHT_UPSET  = 0.20   # 人気以上の好走力
-WEIGHT_VENUE  = 0.15   # コース適性
+WEIGHT_VENUE  = 0.20   # コース適性
 
 # 評価ランク閾値
 RANK_S_GAP = 4
@@ -440,11 +441,20 @@ def save_json(data: dict, evals: list[HorseEvaluation], output_path: str) -> Non
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Value Hunter — 競馬バリュー分析ツール"
+        description="Value Hunter — 競馬バリュー分析ツール",
+        epilog="例: python value_hunter.py output/result.json"
+               " または python value_hunter.py -i output/result.json -o output/vh.json",
     )
     parser.add_argument(
-        "-i", "--input", default=DEFAULT_INPUT,
-        help=f"入力JSONファイルパス (デフォルト: {DEFAULT_INPUT})",
+        "input_file",
+        nargs="?",
+        default=None,
+        help="入力JSONファイルパス（位置引数で指定可能）",
+    )
+    parser.add_argument(
+        "-i", "--input",
+        default=None,
+        help=f"入力JSONファイルパス（-i で指定する場合。未指定時は上記位置引数またはデフォルト {DEFAULT_INPUT}）",
     )
     parser.add_argument(
         "-o", "--output", default=DEFAULT_OUTPUT,
@@ -456,8 +466,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # 入力パス: 位置引数 > -i/--input > デフォルト
+    input_path = args.input_file or args.input or DEFAULT_INPUT
+
     # 入力読み込み
-    data = load_input(args.input)
+    data = load_input(input_path)
 
     # 評価実行
     evals = evaluate_horses(data)
